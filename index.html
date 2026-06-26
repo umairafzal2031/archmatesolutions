@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ArchVision Estimators — Precision. Scale. Vision.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --void:     #050A1A;
+    --deep:     #0A1628;
+    --panel:    #0D1E36;
+    --border:   #1E3A5F;
+    --cyan:     #00D4FF;
+    --cyan-dim: #0099BB;
+    --gold:     #FFB800;
+    --text:     #E8F4FD;
+    --muted:    #8BA7C7;
+    --radius:   4px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ─── BLUEPRINT INTRO OVERLAY ─── */
+  #intro-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: var(--void);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    transition: opacity 0.8s ease 0.3s;
+  }
+  #intro-overlay.done { opacity: 0; pointer-events: none; }
+
+  #blueprint-canvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+  }
+
+  .intro-logo {
+    position: relative; z-index: 2;
+    text-align: center;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 1.6s forwards;
+  }
+  .intro-logo .mark {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    color: var(--cyan);
+    text-shadow: 0 0 30px rgba(0,212,255,0.6);
+  }
+  .intro-logo .sub {
+    font-size: 0.75rem;
+    letter-spacing: 0.35em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 0.4rem;
+  }
+  .intro-bar {
+    position: relative; z-index: 2;
+    margin-top: 2rem;
+    width: 200px; height: 2px;
+    background: var(--border);
+    overflow: hidden;
+    opacity: 0;
+    animation: fadeUp 0.5s ease 2s forwards;
+  }
+  .intro-bar::after {
+    content: '';
+    position: absolute; left: -100%; top: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    animation: scanBar 1.2s ease 2.1s forwards;
+  }
+  @keyframes scanBar { to { left: 100%; } }
+  .intro-pct {
+    position: relative; z-index: 2;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    color: var(--cyan);
+    letter-spacing: 0.2em;
+    margin-top: 0.6rem;
+    opacity: 0;
+    animation: fadeUp 0.5s ease 2.1s forwards, countUp 1s ease 2.1s forwards;
+  }
+  @keyframes countUp {
+    0%  { content: '000'; }
+    100%{ content: '100'; }
+  }
+
+  /* ─── NAVBAR ─── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 5%;
+    background: rgba(5,10,26,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(30,58,95,0.5);
+    transform: translateY(-100%);
+    animation: slideDown 0.6s ease 3.2s forwards;
+  }
+  @keyframes slideDown { to { transform: translateY(0); } }
+
+  .nav-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.12em;
+    color: var(--cyan);
+  }
+  .nav-logo span { color: var(--text); }
+
+  .nav-links { display: flex; gap: 2rem; list-style: none; }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--cyan); }
+
+  .nav-cta {
+    padding: 0.5rem 1.2rem;
+    background: transparent;
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s;
+  }
+  .nav-cta:hover { background: var(--cyan); color: var(--void); }
+
+  /* ─── HERO ─── */
+  #hero {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    padding: 8rem 5% 4rem;
+    overflow: hidden;
+  }
+
+  .hero-grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
+  }
+
+  .hero-accent {
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,212,255,0.08) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative; z-index: 2;
+    max-width: 800px;
+    text-align: center;
+    opacity: 0;
+    animation: fadeUp 1s ease 3.4s forwards;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 1.5rem;
+  }
+  .hero-eyebrow::before, .hero-eyebrow::after {
+    content: '';
+    display: block; width: 30px; height: 1px;
+    background: var(--cyan);
+    opacity: 0.5;
+  }
+
+  .hero-title {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: clamp(2.2rem, 5.5vw, 4.5rem);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    margin-bottom: 1.5rem;
+  }
+  .hero-title .line-cyan { color: var(--cyan); }
+  .hero-title .line-dim { color: var(--muted); font-weight: 400; font-size: 0.6em; display: block; margin-top: 0.3em; letter-spacing: 0.15em; }
+
+  .hero-desc {
+    font-size: 1.05rem;
+    color: var(--muted);
+    max-width: 560px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.75;
+  }
+
+  .hero-buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+  .btn-primary {
+    padding: 0.85rem 2rem;
+    background: var(--cyan);
+    color: var(--void);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    transition: background 0.2s, transform 0.2s;
+  }
+  .btn-primary:hover { background: #33DDFF; transform: translateY(-2px); }
+
+  .btn-ghost {
+    padding: 0.85rem 2rem;
+    background: transparent;
+    color: var(--text);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-ghost:hover { border-color: var(--cyan); color: var(--cyan); }
+
+  /* ─── STATS ─── */
+  #stats {
+    padding: 3rem 5%;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--deep);
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .stat-item { padding: 1rem; }
+  .stat-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    font-weight: 700;
+    color: var(--cyan);
+    line-height: 1;
+    display: block;
+  }
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-top: 0.4rem;
+    display: block;
+  }
+
+  /* ─── SECTION BASE ─── */
+  section { padding: 6rem 5%; }
+  .section-eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 0.75rem;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .section-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 20px; height: 1px;
+    background: var(--cyan);
+  }
+  .section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 700;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+  }
+  .section-sub {
+    font-size: 0.95rem;
+    color: var(--muted);
+    max-width: 540px;
+    line-height: 1.75;
+  }
+
+  /* ─── SERVICES ─── */
+  #services { background: var(--void); }
+  .services-header { text-align: center; margin-bottom: 4rem; }
+  .services-header .section-eyebrow { justify-content: center; }
+  .services-header .section-sub { margin: 0 auto; }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5px;
+    max-width: 1100px;
+    margin: 0 auto;
+    background: var(--border);
+  }
+  .service-card {
+    background: var(--panel);
+    padding: 2.5rem 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.25s;
+    cursor: default;
+  }
+  .service-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 3px; height: 0;
+    background: var(--cyan);
+    transition: height 0.35s ease;
+  }
+  .service-card:hover { background: var(--deep); }
+  .service-card:hover::before { height: 100%; }
+
+  .service-icon {
+    width: 48px; height: 48px;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.5rem;
+    color: var(--cyan);
+    font-size: 1.4rem;
+    transition: border-color 0.25s;
+  }
+  .service-card:hover .service-icon { border-color: var(--cyan); }
+
+  .service-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.8rem;
+  }
+  .service-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.7; }
+
+  /* ─── PROJECTS ─── */
+  #projects { background: var(--deep); }
+  .projects-layout {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 4rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    align-items: start;
+  }
+  .projects-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5px;
+    background: var(--border);
+  }
+  .project-card {
+    background: var(--panel);
+    padding: 2rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.25s;
+  }
+  .project-card:hover { background: var(--void); }
+
+  .project-tag {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 0.8rem;
+    display: block;
+  }
+  .project-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+  }
+  .project-meta { font-size: 0.8rem; color: var(--muted); }
+  .project-value {
+    margin-top: 1rem;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold);
+  }
+  .project-scan {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.5s ease;
+  }
+  .project-card:hover .project-scan { transform: translateX(100%); }
+
+  /* ─── PROCESS ─── */
+  #process { background: var(--void); }
+  .process-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    align-items: center;
+  }
+  .process-steps { display: flex; flex-direction: column; gap: 0; }
+  .process-step {
+    display: flex; gap: 1.5rem;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .step-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 0.1em;
+    min-width: 40px;
+    padding-top: 0.2rem;
+  }
+  .step-content {}
+  .step-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+  .step-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.65; }
+
+  .process-visual {
+    position: relative;
+    aspect-ratio: 1;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .process-visual svg { width: 85%; height: 85%; opacity: 0.7; }
+
+  /* ─── CONTACT ─── */
+  #contact { background: var(--deep); }
+  .contact-layout {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 4rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    align-items: start;
+  }
+  .contact-info { padding-top: 0.5rem; }
+  .contact-detail {
+    display: flex; gap: 1rem;
+    align-items: flex-start;
+    margin-top: 2rem;
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    background: var(--panel);
+  }
+  .contact-detail-icon {
+    color: var(--cyan);
+    font-size: 1.1rem;
+    margin-top: 0.1rem;
+    min-width: 20px;
+  }
+  .contact-detail-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+  }
+  .contact-detail-value { font-size: 0.9rem; color: var(--text); }
+
+  .contact-form-wrap {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 2.5rem;
+    position: relative;
+  }
+  .contact-form-wrap::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--cyan), transparent);
+  }
+
+  .form-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    margin-bottom: 1.8rem;
+    color: var(--text);
+  }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-group { margin-bottom: 1.2rem; }
+  .form-group label {
+    display: block;
+    font-size: 0.68rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.45rem;
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    background: var(--deep);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.75rem 1rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+    border-radius: 0;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: var(--cyan);
+  }
+  .form-group textarea { resize: vertical; min-height: 100px; }
+  .form-group select { cursor: pointer; }
+
+  .form-submit {
+    width: 100%;
+    padding: 1rem;
+    background: var(--cyan);
+    color: var(--void);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    margin-top: 0.5rem;
+  }
+  .form-submit:hover { background: #33DDFF; transform: translateY(-1px); }
+  .form-submit:active { transform: translateY(0); }
+
+  .form-success {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+    color: var(--cyan);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    background: var(--void);
+    border-top: 1px solid var(--border);
+    padding: 2rem 5%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .footer-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 0.1em;
+  }
+  .footer-copy { font-size: 0.78rem; color: var(--muted); }
+  .footer-links { display: flex; gap: 1.5rem; }
+  .footer-links a { font-size: 0.75rem; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--cyan); }
+
+  /* ─── SCROLL REVEAL ─── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+  .reveal-delay-5 { transition-delay: 0.5s; }
+  .reveal-delay-6 { transition-delay: 0.6s; }
+
+  /* ─── MOBILE NAV ─── */
+  .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
+  .hamburger span { display: block; width: 22px; height: 1.5px; background: var(--muted); transition: 0.3s; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 900px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .services-grid { grid-template-columns: 1fr 1fr; }
+    .projects-layout { grid-template-columns: 1fr; gap: 2rem; }
+    .process-layout { grid-template-columns: 1fr; }
+    .process-visual { display: none; }
+    .contact-layout { grid-template-columns: 1fr; gap: 2rem; }
+    .form-row { grid-template-columns: 1fr; }
+    .nav-links, .nav-cta { display: none; }
+    .hamburger { display: flex; }
+  }
+
+  @media (max-width: 600px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+    .services-grid { grid-template-columns: 1fr; }
+    .projects-grid { grid-template-columns: 1fr; }
+    section { padding: 4rem 4%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
+  /* Cursor dot */
+  .cursor-dot {
+    position: fixed;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: width 0.2s, height 0.2s, opacity 0.2s;
+    mix-blend-mode: screen;
+  }
+  .cursor-ring {
+    position: fixed;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,212,255,0.4);
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: left 0.08s, top 0.08s, width 0.25s, height 0.25s;
+  }
+  @media (hover: none) { .cursor-dot, .cursor-ring { display: none; } }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Blueprint animate */
+  .bp-line {
+    stroke-dasharray: 2000;
+    stroke-dashoffset: 2000;
+  }
+  .bp-line.draw { animation: drawLine 1.4s ease forwards; }
+  @keyframes drawLine {
+    to { stroke-dashoffset: 0; }
+  }
+
+  /* Scanning line on hero */
+  .scan-line {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--cyan) 50%, transparent 100%);
+    opacity: 0.3;
+    animation: scanDown 4s linear infinite;
+  }
+  @keyframes scanDown {
+    from { top: 0; opacity: 0.3; }
+    to   { top: 100%; opacity: 0; }
+  }
+
+  /* Corner brackets on service cards */
+  .service-card .corner {
+    position: absolute;
+    width: 12px; height: 12px;
+    border-color: var(--border);
+    border-style: solid;
+    transition: border-color 0.25s;
+  }
+  .service-card:hover .corner { border-color: var(--cyan); }
+  .corner.tl { top: 8px; left: 8px; border-width: 1px 0 0 1px; }
+  .corner.tr { top: 8px; right: 8px; border-width: 1px 1px 0 0; }
+  .corner.bl { bottom: 8px; left: 8px; border-width: 0 0 1px 1px; }
+  .corner.br { bottom: 8px; right: 8px; border-width: 0 1px 1px 0; }
+</style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- ─── INTRO OVERLAY ─── -->
+<div id="intro-overlay">
+  <canvas id="blueprint-canvas"></canvas>
+  <div class="intro-logo">
+    <div class="mark">ARCHVISION</div>
+    <div class="sub">Architecture Estimation Services</div>
+  </div>
+  <div class="intro-bar"></div>
+  <div class="intro-pct" id="pct-counter">000%</div>
+</div>
+
+<!-- ─── NAVBAR ─── -->
+<nav>
+  <div class="nav-logo">ARCH<span>VISION</span></div>
+  <ul class="nav-links">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#process">Process</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <a href="#contact" class="nav-cta">Get Estimate</a>
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section id="hero">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-accent"></div>
+  <div class="scan-line"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Architecture Estimation Services</div>
+    <h1 class="hero-title">
+      <span class="line-cyan">Precision-Engineered</span><br>
+      Cost Intelligence
+      <span class="line-dim">for the Built Environment</span>
+    </h1>
+    <p class="hero-desc">
+      From concept sketch to final tender — we deliver forensic-grade quantity surveying, cost planning, and procurement strategy that keeps your projects on budget and on time.
+    </p>
+    <div class="hero-buttons">
+      <a href="#contact" class="btn-primary">Request Estimate</a>
+      <a href="#projects" class="btn-ghost">View Projects</a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STATS ─── -->
+<div id="stats">
+  <div class="stats-grid">
+    <div class="stat-item reveal">
+      <span class="stat-num" data-target="340">0</span>
+      <span class="stat-label">Projects Completed</span>
+    </div>
+    <div class="stat-item reveal reveal-delay-2">
+      <span class="stat-num" data-target="98">0</span>
+      <span class="stat-label">% Budget Accuracy</span>
+    </div>
+    <div class="stat-item reveal reveal-delay-3">
+      <span class="stat-num" data-target="18">0</span>
+      <span class="stat-label">Years of Experience</span>
+    </div>
+    <div class="stat-item reveal reveal-delay-4">
+      <span class="stat-num" data-target="2400000000" data-prefix="$" data-suffix="B">0</span>
+      <span class="stat-label">In Project Value Managed</span>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SERVICES ─── -->
+<section id="services">
+  <div class="services-header reveal">
+    <div class="section-eyebrow">What We Do</div>
+    <h2 class="section-title">Estimation, Start to Finish</h2>
+    <p class="section-sub">A full-spectrum cost management practice — from early feasibility through to final account resolution.</p>
+  </div>
+  <div class="services-grid">
+    <div class="service-card reveal reveal-delay-1">
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <div class="service-icon">⬡</div>
+      <div class="service-name">Quantity Surveying</div>
+      <p class="service-desc">Detailed take-offs and material schedules from architectural drawings, ensuring nothing is missed before procurement begins.</p>
+    </div>
+    <div class="service-card reveal reveal-delay-2">
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <div class="service-icon">◈</div>
+      <div class="service-name">Feasibility Cost Plans</div>
+      <p class="service-desc">Early-stage budget intelligence that gives developers and architects a reliable cost envelope before design commitment.</p>
+    </div>
+    <div class="service-card reveal reveal-delay-3">
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <div class="service-icon">◲</div>
+      <div class="service-name">Tender Management</div>
+      <p class="service-desc">Bill of quantities preparation, contractor evaluation, and tender analysis — protecting you through every bidding stage.</p>
+    </div>
+    <div class="service-card reveal reveal-delay-1">
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <div class="service-icon">⬕</div>
+      <div class="service-name">Value Engineering</div>
+      <p class="service-desc">Systematic analysis of materials and methods to achieve the same functional outcome at optimised cost without quality compromise.</p>
+    </div>
+    <div class="service-card reveal reveal-delay-2">
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <div class="service-icon">◫</div>
+      <div class="service-name">Project Cost Monitoring</div>
+      <p class="service-desc">Live cost tracking through construction, with variation assessments and monthly forecasts to keep boards fully informed.</p>
+    </div>
+    <div class="service-card reveal reveal-delay-3">
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <div class="service-icon">◉</div>
+      <div class="service-name">Final Account Resolution</div>
+      <p class="service-desc">Expert negotiation and settlement of contractor claims, variations, and disputes at practical completion.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PROJECTS ─── -->
+<section id="projects">
+  <div class="projects-layout">
+    <div class="reveal">
+      <div class="section-eyebrow">Portfolio</div>
+      <h2 class="section-title">Selected Projects</h2>
+      <p class="section-sub">A cross-sector track record spanning residential towers, commercial campuses, infrastructure, and heritage restoration.</p>
+      <br><br>
+      <a href="#contact" class="btn-ghost">Discuss Your Project →</a>
+    </div>
+    <div class="projects-grid">
+      <div class="project-card reveal reveal-delay-1">
+        <div class="project-scan"></div>
+        <span class="project-tag">Residential</span>
+        <div class="project-name">The Meridian Tower — 42-Storey Mixed-Use</div>
+        <div class="project-meta">Dubai, UAE · 2023</div>
+        <div class="project-value">$240M</div>
+      </div>
+      <div class="project-card reveal reveal-delay-2">
+        <div class="project-scan"></div>
+        <span class="project-tag">Commercial</span>
+        <div class="project-name">Apex Corporate Campus — 6-Building Complex</div>
+        <div class="project-meta">Karachi, PK · 2022</div>
+        <div class="project-value">$85M</div>
+      </div>
+      <div class="project-card reveal reveal-delay-3">
+        <div class="project-scan"></div>
+        <span class="project-tag">Infrastructure</span>
+        <div class="project-name">City Link Interchange — Grade Separation</div>
+        <div class="project-meta">Lahore, PK · 2023</div>
+        <div class="project-value">$120M</div>
+      </div>
+      <div class="project-card reveal reveal-delay-4">
+        <div class="project-scan"></div>
+        <span class="project-tag">Healthcare</span>
+        <div class="project-name">Central Medical Centre — 800-Bed Hospital</div>
+        <div class="project-meta">Islamabad, PK · 2021</div>
+        <div class="project-value">$310M</div>
+      </div>
+      <div class="project-card reveal reveal-delay-5">
+        <div class="project-scan"></div>
+        <span class="project-tag">Heritage</span>
+        <div class="project-name">Colonial Quarter Restoration — 14 Buildings</div>
+        <div class="project-meta">Lahore, PK · 2022</div>
+        <div class="project-value">$28M</div>
+      </div>
+      <div class="project-card reveal reveal-delay-6">
+        <div class="project-scan"></div>
+        <span class="project-tag">Industrial</span>
+        <div class="project-name">Faisalabad Logistics Hub — 3M sq.ft</div>
+        <div class="project-meta">Faisalabad, PK · 2024</div>
+        <div class="project-value">$175M</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PROCESS ─── -->
+<section id="process">
+  <div class="process-layout">
+    <div>
+      <div class="section-eyebrow reveal">How We Work</div>
+      <h2 class="section-title reveal">From Brief to Budget in Four Stages</h2>
+      <p class="section-sub reveal">A disciplined methodology that produces dependable numbers at every design gate — not just at tender.</p>
+      <div class="process-steps" style="margin-top: 2.5rem;">
+        <div class="process-step reveal reveal-delay-1">
+          <div class="step-num">01</div>
+          <div class="step-content">
+            <div class="step-title">Brief & Drawing Review</div>
+            <p class="step-desc">We analyse your documentation, clarify scope, and identify information gaps before pricing begins.</p>
+          </div>
+        </div>
+        <div class="process-step reveal reveal-delay-2">
+          <div class="step-num">02</div>
+          <div class="step-content">
+            <div class="step-title">Detailed Take-Off</div>
+            <p class="step-desc">Element-by-element measurement against current local and regional rates, benchmarked to recent market data.</p>
+          </div>
+        </div>
+        <div class="process-step reveal reveal-delay-3">
+          <div class="step-num">03</div>
+          <div class="step-content">
+            <div class="step-title">Cost Report Delivery</div>
+            <p class="step-desc">A structured report with summary, elemental breakdown, risk allowances, and procurement recommendations.</p>
+          </div>
+        </div>
+        <div class="process-step reveal reveal-delay-4">
+          <div class="step-num">04</div>
+          <div class="step-content">
+            <div class="step-title">Review & Handover</div>
+            <p class="step-desc">A live walkthrough of findings, answering design team queries and briefing the client for stakeholder presentations.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="process-visual reveal reveal-delay-3">
+      <svg viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Blueprint floor plan lines -->
+        <rect x="40" y="40" width="320" height="320" stroke="#1E3A5F" stroke-width="1"/>
+        <rect x="60" y="60" width="280" height="280" stroke="#00D4FF" stroke-width="0.5" opacity="0.3"/>
+        <!-- Room divisions -->
+        <line x1="200" y1="40" x2="200" y2="360" stroke="#1E3A5F" stroke-width="1"/>
+        <line x1="40" y1="200" x2="360" y2="200" stroke="#1E3A5F" stroke-width="1"/>
+        <!-- Inner details -->
+        <rect x="80" y="80" width="100" height="100" stroke="#00D4FF" stroke-width="0.8" opacity="0.5"/>
+        <rect x="220" y="80" width="100" height="100" stroke="#00D4FF" stroke-width="0.8" opacity="0.5"/>
+        <rect x="80" y="220" width="100" height="100" stroke="#00D4FF" stroke-width="0.8" opacity="0.5"/>
+        <rect x="220" y="220" width="100" height="100" stroke="#00D4FF" stroke-width="0.8" opacity="0.5"/>
+        <!-- Center cross -->
+        <circle cx="200" cy="200" r="20" stroke="#00D4FF" stroke-width="1" opacity="0.6"/>
+        <line x1="185" y1="200" x2="215" y2="200" stroke="#00D4FF" stroke-width="1" opacity="0.6"/>
+        <line x1="200" y1="185" x2="200" y2="215" stroke="#00D4FF" stroke-width="1" opacity="0.6"/>
+        <!-- Dimension lines -->
+        <line x1="40" y1="380" x2="360" y2="380" stroke="#8BA7C7" stroke-width="0.5"/>
+        <line x1="40" y1="376" x2="40" y2="384" stroke="#8BA7C7" stroke-width="0.5"/>
+        <line x1="360" y1="376" x2="360" y2="384" stroke="#8BA7C7" stroke-width="0.5"/>
+        <text x="200" y="395" text-anchor="middle" font-size="8" fill="#8BA7C7" font-family="Orbitron">42 500 mm</text>
+        <!-- Corner markers -->
+        <circle cx="40" cy="40" r="3" fill="#00D4FF" opacity="0.8"/>
+        <circle cx="360" cy="40" r="3" fill="#00D4FF" opacity="0.8"/>
+        <circle cx="40" cy="360" r="3" fill="#00D4FF" opacity="0.8"/>
+        <circle cx="360" cy="360" r="3" fill="#00D4FF" opacity="0.8"/>
+        <!-- Door swings -->
+        <path d="M200 140 Q160 140 160 100" stroke="#00D4FF" stroke-width="0.6" opacity="0.4" fill="none"/>
+        <path d="M200 260 Q240 260 240 300" stroke="#00D4FF" stroke-width="0.6" opacity="0.4" fill="none"/>
+        <!-- Scanning animation line -->
+        <line x1="40" y1="0" x2="360" y2="0" stroke="#00D4FF" stroke-width="1.5" opacity="0.6">
+          <animateTransform attributeName="transform" type="translate" from="0,40" to="0,360" dur="3s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.6;0;0.6" dur="3s" repeatCount="indefinite"/>
+        </line>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CONTACT ─── -->
+<section id="contact">
+  <div class="contact-layout">
+    <div class="contact-info">
+      <div class="section-eyebrow reveal">Contact</div>
+      <h2 class="section-title reveal">Start Your Estimate</h2>
+      <p class="section-sub reveal">Tell us about your project. We respond within one business day with an engagement proposal and indicative timeline.</p>
+      <div class="contact-detail reveal reveal-delay-1">
+        <div class="contact-detail-icon">◈</div>
+        <div>
+          <div class="contact-detail-label">Email</div>
+          <div class="contact-detail-value">info@archvision-est.com</div>
+        </div>
+      </div>
+      <div class="contact-detail reveal reveal-delay-2">
+        <div class="contact-detail-icon">◈</div>
+        <div>
+          <div class="contact-detail-label">Phone</div>
+          <div class="contact-detail-value">+92 300 000 0000</div>
+        </div>
+      </div>
+      <div class="contact-detail reveal reveal-delay-3">
+        <div class="contact-detail-icon">◈</div>
+        <div>
+          <div class="contact-detail-label">Office</div>
+          <div class="contact-detail-value">Lahore, Punjab, Pakistan</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="contact-form-wrap reveal reveal-delay-2">
+      <div class="form-title">// PROJECT ENQUIRY FORM</div>
+      <div id="contactForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>First Name</label>
+            <input type="text" placeholder="Ahmed" id="fname"/>
+          </div>
+          <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" placeholder="Khan" id="lname"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" placeholder="ahmed@company.com" id="email"/>
+        </div>
+        <div class="form-group">
+          <label>Project Type</label>
+          <select id="projtype">
+            <option value="">— Select sector —</option>
+            <option>Residential</option>
+            <option>Commercial</option>
+            <option>Industrial</option>
+            <option>Healthcare</option>
+            <option>Infrastructure</option>
+            <option>Heritage / Restoration</option>
+            <option>Mixed-Use</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Approximate Budget (USD)</label>
+          <select id="budget">
+            <option value="">— Select range —</option>
+            <option>Under $1M</option>
+            <option>$1M – $10M</option>
+            <option>$10M – $50M</option>
+            <option>$50M – $200M</option>
+            <option>$200M+</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Project Description</label>
+          <textarea placeholder="Brief overview — scope, location, stage of design..." id="message"></textarea>
+        </div>
+        <button class="form-submit" onclick="submitForm()">Transmit Enquiry →</button>
+      </div>
+      <div class="form-success" id="formSuccess">
+        <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--cyan);">✓</div>
+        TRANSMISSION RECEIVED<br>
+        <span style="font-family: Inter; font-size: 0.8rem; color: var(--muted); font-weight: 400; letter-spacing: 0;">We'll be in touch within one business day.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="footer-logo">ARCHVISION</div>
+  <div class="footer-copy">© 2024 ArchVision Estimators. All rights reserved.</div>
+  <div class="footer-links">
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="#contact">Contact</a>
+  </div>
+</footer>
+
+<script>
+/* ─── CURSOR ─── */
+const dot  = document.getElementById('cursorDot');
+const ring = document.getElementById('cursorRing');
+document.addEventListener('mousemove', e => {
+  dot.style.left  = e.clientX + 'px';
+  dot.style.top   = e.clientY + 'px';
+  ring.style.left = e.clientX + 'px';
+  ring.style.top  = e.clientY + 'px';
+});
+
+/* ─── BLUEPRINT CANVAS INTRO ─── */
+(function() {
+  const canvas = document.getElementById('blueprint-canvas');
+  const ctx    = canvas.getContext('2d');
+  let W, H;
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const cyan = 'rgba(0,212,255,';
+  const blue = 'rgba(30,58,95,';
+
+  // Grid
+  function drawGrid(alpha) {
+    ctx.strokeStyle = `rgba(0,212,255,${alpha * 0.08})`;
+    ctx.lineWidth = 0.5;
+    const gs = 50;
+    for (let x = 0; x <= W; x += gs) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y <= H; y += gs) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+  }
+
+  // Random blueprint lines
+  const lines = [];
+  for (let i = 0; i < 20; i++) {
+    const horiz = Math.random() > 0.5;
+    lines.push({
+      x1: horiz ? 0 : Math.random()*W,
+      y1: horiz ? Math.random()*H : 0,
+      x2: horiz ? W : Math.random()*W,
+      y2: horiz ? Math.random()*H : H,
+      progress: 0,
+      speed: 0.008 + Math.random()*0.015,
+      delay: Math.random()*0.6,
+      alpha: 0.1 + Math.random()*0.2
+    });
+  }
+
+  // Rectangles
+  const rects = [];
+  for (let i = 0; i < 6; i++) {
+    const rw = 80 + Math.random()*200, rh = 60 + Math.random()*150;
+    rects.push({
+      x: Math.random()*(W-rw), y: Math.random()*(H-rh), w: rw, h: rh,
+      progress: 0, delay: 0.2 + Math.random()*0.7,
+      speed: 0.006 + Math.random()*0.01
+    });
+  }
+
+  let t = 0;
+  let pct = 0;
+  const pctEl = document.getElementById('pct-counter');
+
+  function animate() {
+    ctx.clearRect(0,0,W,H);
+    drawGrid(Math.min(1, t/0.3));
+
+    lines.forEach(l => {
+      if (t < l.delay) return;
+      l.progress = Math.min(1, l.progress + l.speed);
+      const x2 = l.x1 + (l.x2 - l.x1)*l.progress;
+      const y2 = l.y1 + (l.y2 - l.y1)*l.progress;
+      ctx.strokeStyle = `rgba(0,212,255,${l.alpha})`;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(l.x1, l.y1); ctx.lineTo(x2, y2); ctx.stroke();
+    });
+
+    rects.forEach(r => {
+      if (t < r.delay) return;
+      r.progress = Math.min(1, r.progress + r.speed);
+      const perim = 2*(r.w + r.h);
+      let drawn = perim * r.progress;
+      ctx.strokeStyle = 'rgba(0,212,255,0.25)';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      // top
+      if (drawn > 0) { ctx.moveTo(r.x, r.y); ctx.lineTo(r.x + Math.min(r.w, drawn), r.y); drawn -= r.w; }
+      // right
+      if (drawn > 0) { ctx.lineTo(r.x+r.w, r.y + Math.min(r.h, drawn)); drawn -= r.h; }
+      // bottom
+      if (drawn > 0) { ctx.lineTo(r.x+r.w - Math.min(r.w, drawn), r.y+r.h); drawn -= r.w; }
+      // left
+      if (drawn > 0) { ctx.lineTo(r.x, r.y+r.h - Math.min(r.h, drawn)); }
+      ctx.stroke();
+    });
+
+    t += 0.012;
+    pct = Math.min(100, Math.round(t / 1.5 * 100));
+    if (pctEl) pctEl.textContent = String(pct).padStart(3,'0') + '%';
+
+    if (t < 1.5) {
+      requestAnimationFrame(animate);
+    } else {
+      // Dismiss overlay
+      setTimeout(() => {
+        document.getElementById('intro-overlay').classList.add('done');
+        setTimeout(() => {
+          document.getElementById('intro-overlay').style.display = 'none';
+        }, 1200);
+      }, 600);
+    }
+  }
+  animate();
+})();
+
+/* ─── SCROLL REVEAL ─── */
+const revealEls = document.querySelectorAll('.reveal');
+const observer  = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+}, { threshold: 0.12 });
+revealEls.forEach(el => observer.observe(el));
+
+/* ─── STAT COUNTER ─── */
+function animateCounter(el, target) {
+  const duration = 1800, start = performance.now();
+  const isBig = target >= 1000000000;
+  function step(now) {
+    const p = Math.min((now - start)/duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    if (isBig) {
+      el.textContent = '$' + (ease * (target/1e9)).toFixed(1) + 'B';
+    } else {
+      el.textContent = Math.round(ease * target) + (target === 98 ? '%' : '+');
+    }
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+const statEls = document.querySelectorAll('.stat-num[data-target]');
+const statObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      animateCounter(e.target, +e.target.dataset.target);
+      statObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.5 });
+statEls.forEach(el => statObs.observe(el));
+
+/* ─── FORM SUBMIT ─── */
+function submitForm() {
+  const f = document.getElementById('fname');
+  const em = document.getElementById('email');
+  if (!f.value.trim() || !em.value.trim()) {
+    f.style.borderColor = !f.value.trim() ? '#FF4444' : '';
+    em.style.borderColor = !em.value.trim() ? '#FF4444' : '';
+    return;
+  }
+  document.getElementById('contactForm').style.display = 'none';
+  document.getElementById('formSuccess').style.display = 'block';
+}
+
+/* ─── NAVBAR SCROLL ─── */
+const nav = document.querySelector('nav');
+window.addEventListener('scroll', () => {
+  nav.style.background = window.scrollY > 50
+    ? 'rgba(5,10,26,0.97)'
+    : 'rgba(5,10,26,0.85)';
+});
+
+/* ─── HAMBURGER (mobile) ─── */
+document.getElementById('hamburger').addEventListener('click', () => {
+  // Simple scroll to top nav anchor on mobile
+  document.querySelector('nav').scrollIntoView();
+});
+</script>
+</body>
+</html>
