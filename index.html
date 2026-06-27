@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>ArchVision Estimators — Precision. Scale. Vision.</title>
+<title>Archmate Solutions — Precision. Scale. Vision.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
@@ -1019,24 +1019,32 @@
 
     <div class="contact-form-wrap reveal reveal-delay-2">
       <div class="form-title">// PROJECT ENQUIRY FORM</div>
-      <div id="contactForm">
+      <div data-fs-success class="form-success">
+        <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--cyan);">✓</div>
+        TRANSMISSION RECEIVED<br>
+        <span style="font-family: Inter; font-size: 0.8rem; color: var(--muted); font-weight: 400; letter-spacing: 0;">We'll be in touch within one business day.</span>
+      </div>
+      <div data-fs-error class="form-success" style="color: #FF4444; display:none;">
+        Oops! There was a problem submitting your form.
+      </div>
+      <form id="contactForm" class="contact-form" method="POST">
         <div class="form-row">
           <div class="form-group">
-            <label>First Name</label>
-            <input type="text" placeholder="Ahmed" id="fname"/>
+            <label for="fname">First Name</label>
+            <input type="text" placeholder="Ahmed" id="fname" name="firstName" data-fs-field required />
           </div>
           <div class="form-group">
-            <label>Last Name</label>
-            <input type="text" placeholder="Khan" id="lname"/>
+            <label for="lname">Last Name</label>
+            <input type="text" placeholder="Khan" id="lname" name="lastName" data-fs-field />
           </div>
         </div>
         <div class="form-group">
-          <label>Email Address</label>
-          <input type="email" placeholder="ahmed@company.com" id="email"/>
+          <label for="email">Email Address</label>
+          <input type="email" placeholder="ahmed@company.com" id="email" name="email" data-fs-field required />
         </div>
         <div class="form-group">
-          <label>Project Type</label>
-          <select id="projtype">
+          <label for="projtype">Project Type</label>
+          <select id="projtype" name="projectType" data-fs-field>
             <option value="">— Select sector —</option>
             <option>Residential</option>
             <option>Commercial</option>
@@ -1048,8 +1056,8 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Approximate Budget (USD)</label>
-          <select id="budget">
+          <label for="budget">Approximate Budget (USD)</label>
+          <select id="budget" name="budget" data-fs-field>
             <option value="">— Select range —</option>
             <option>Under $1M</option>
             <option>$1M – $10M</option>
@@ -1059,16 +1067,11 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Project Description</label>
-          <textarea placeholder="Brief overview — scope, location, stage of design..." id="message"></textarea>
+          <label for="message">Project Description</label>
+          <textarea placeholder="Brief overview — scope, location, stage of design..." id="message" name="message" data-fs-field></textarea>
         </div>
-        <button class="form-submit" onclick="submitForm()">Transmit Enquiry →</button>
-      </div>
-      <div class="form-success" id="formSuccess">
-        <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--cyan);">✓</div>
-        TRANSMISSION RECEIVED<br>
-        <span style="font-family: Inter; font-size: 0.8rem; color: var(--muted); font-weight: 400; letter-spacing: 0;">We'll be in touch within one business day.</span>
-      </div>
+        <button type="submit" class="form-submit" data-fs-submit-btn>Transmit Enquiry →</button>
+      </form>
     </div>
   </div>
 </section>
@@ -1238,19 +1241,6 @@ const statObs = new IntersectionObserver(entries => {
 }, { threshold: 0.5 });
 statEls.forEach(el => statObs.observe(el));
 
-/* ─── FORM SUBMIT ─── */
-function submitForm() {
-  const f = document.getElementById('fname');
-  const em = document.getElementById('email');
-  if (!f.value.trim() || !em.value.trim()) {
-    f.style.borderColor = !f.value.trim() ? '#FF4444' : '';
-    em.style.borderColor = !em.value.trim() ? '#FF4444' : '';
-    return;
-  }
-  document.getElementById('contactForm').style.display = 'none';
-  document.getElementById('formSuccess').style.display = 'block';
-}
-
 /* ─── NAVBAR SCROLL ─── */
 const nav = document.querySelector('nav');
 window.addEventListener('scroll', () => {
@@ -1265,5 +1255,17 @@ document.getElementById('hamburger').addEventListener('click', () => {
   document.querySelector('nav').scrollIntoView();
 });
 </script>
+<script>
+  window.formspree =
+    window.formspree ||
+    function () {
+      (formspree.q = formspree.q || []).push(arguments);
+    };
+  formspree("initForm", {
+    formElement: "#contactForm",
+    formId: "mrewqnqo",
+  });
+</script>
+<script src="https://unpkg.com/@formspree/ajax@1" defer></script>
 </body>
 </html>
